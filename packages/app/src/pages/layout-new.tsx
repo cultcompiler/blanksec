@@ -47,7 +47,8 @@ export default function NewLayout(props: ParentProps) {
     try {
       setAuth(await a.state())
     } catch {
-      setAuth(FULL_OWNER)
+      // On the desktop, a failure gates (shows the login page) rather than granting access.
+      setAuth({ role: null, isOwner: false, configured: false, username: null, perms: null, authUrl: "" })
     }
     setAuthReady(true)
   }

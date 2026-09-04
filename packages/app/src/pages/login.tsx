@@ -1,17 +1,12 @@
 import { createSignal, Show } from "solid-js"
 import { ButtonV2 } from "@opencode-ai/ui/v2/button-v2"
 
-type AuthAPI = {
-  login: (u: string, p: string) => Promise<{ ok?: boolean; error?: string }>
-  setupOwner: (t: string) => Promise<{ ok?: boolean; error?: string }>
-}
+type AuthAPI = { login: (u: string, p: string) => Promise<{ ok?: boolean; error?: string }> }
 const authApi = (): AuthAPI | undefined => (window as unknown as { api?: { auth?: AuthAPI } }).api?.auth
 
 export default function LoginPage(props: { onDone: () => void }) {
   const [username, setUsername] = createSignal("")
   const [password, setPassword] = createSignal("")
-  const [adminToken, setAdminToken] = createSignal("")
-  const [ownerMode, setOwnerMode] = createSignal(false)
   const [busy, setBusy] = createSignal(false)
   const [error, setError] = createSignal<string | null>(null)
 
@@ -31,22 +26,6 @@ export default function LoginPage(props: { onDone: () => void }) {
     }
   }
 
-  async function setupOwner() {
-    const a = authApi()
-    if (!a || busy() || !adminToken().trim()) return
-    setBusy(true)
-    setError(null)
-    try {
-      const r = await a.setupOwner(adminToken().trim())
-      if (r && r.ok) props.onDone()
-      else setError((r && r.error) || "Invalid admin token")
-    } catch (e: any) {
-      setError(String(e?.message || e))
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return (
     <div class="flex h-full min-h-0 w-full items-center justify-center bg-v2-background-bg-deep">
       <div class="flex w-[320px] flex-col gap-5">
@@ -54,64 +33,30 @@ export default function LoginPage(props: { onDone: () => void }) {
           <div class="text-[22px] tracking-[2px] text-v2-text-text-base [font-weight:700] [font-family:ui-monospace,SFMono-Regular,monospace]">
             Blank
           </div>
-          <div class="text-[13px] text-v2-text-text-muted [font-weight:440]">
-            {ownerMode() ? "Owner setup" : "Sign in to continue"}
-          </div>
+          <div class="text-[13px] text-v2-text-text-muted [font-weight:440]">Sign in to continue</div>
         </div>
-
-        <Show
-          when={!ownerMode()}
-          fallback={
-            <div class="flex flex-col gap-3">
-              <Field
-                label="Admin token"
-                value={adminToken()}
-                onInput={setAdminToken}
-                password
-                onEnter={setupOwner}
-                placeholder="paste your admin token"
-              />
-              <ButtonV2 variant="neutral" size="normal" onClick={setupOwner} disabled={busy() || !adminToken().trim()}>
-                Set up as owner
-              </ButtonV2>
-            </div>
-          }
-        >
-          <div class="flex flex-col gap-3">
-            <Field label="Username" value={username()} onInput={setUsername} onEnter={signIn} placeholder="username" />
-            <Field
-              label="Password"
-              value={password()}
-              onInput={setPassword}
-              password
-              onEnter={signIn}
-              placeholder="password"
-            />
-            <ButtonV2
-              variant="neutral"
-              size="normal"
-              onClick={signIn}
-              disabled={busy() || !username().trim() || !password()}
-            >
-              Sign in
-            </ButtonV2>
-          </div>
-        </Show>
-
+        <div class="flex flex-col gap-3">
+          <Field label="Username" value={username()} onInput={setUsername} onEnter={signIn} placeholder="username" />
+          <Field
+            label="Password"
+            value={password()}
+            onInput={setPassword}
+            password
+            onEnter={signIn}
+            placeholder="password"
+          />
+          <ButtonV2
+            variant="neutral"
+            size="normal"
+            onClick={signIn}
+            disabled={busy() || !username().trim() || !password()}
+          >
+            Sign in
+          </ButtonV2>
+        </div>
         <Show when={error()}>
           <div class="text-center text-[12px] text-[#e5534b] [font-weight:440]">{error()}</div>
         </Show>
-
-        <button
-          type="button"
-          class="text-center text-[12px] text-v2-text-text-faint [font-weight:440] transition-colors hover:text-v2-text-text-muted"
-          onClick={() => {
-            setOwnerMode(!ownerMode())
-            setError(null)
-          }}
-        >
-          {ownerMode() ? "Sign in as a member instead" : "Set up this device as the owner"}
-        </button>
       </div>
     </div>
   )

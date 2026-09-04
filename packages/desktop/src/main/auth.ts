@@ -68,16 +68,36 @@ async function post(pathname: string, body: object): Promise<any> {
 }
 
 export const auth = {
-  state() {
+  async state() {
     const s = load()
-    const isOwner = s.role === "owner"
+    const gate = () => ({
+      role: null as string | null,
+      isOwner: false,
+      configured: false,
+      username: null as string | null,
+      perms: null as Perms | null,
+      authUrl: authUrl(s),
+    })
+    if (!s.session?.token) return gate()
+    // Verify with the server so permissions stay authoritative (revocation / device changes take effect).
+    const r = await post("/verify", { token: s.session.token })
+    let perms = s.session.perms || {}
+    if (r && r.ok && r.perms) {
+      perms = r.perms
+      s.session.perms = perms
+      save(s)
+    } else if (r && r.error && /invalid|expired/i.test(String(r.error))) {
+      s.session = null
+      save(s)
+      return gate()
+    }
+    // A network error falls through on the last-known perms (offline grace) rather than silently logging out.
     return {
-      role: s.role || null,
-      isOwner,
-      // Whether this install is provisioned at all. If not, the renderer shows the login page.
-      configured: s.role === "owner" || !!s.session,
-      username: isOwner ? "owner" : s.session?.username || null,
-      perms: isOwner ? OWNER_PERMS : s.session?.perms || null,
+      role: "member",
+      isOwner: !!perms.admin,
+      configured: true,
+      username: s.session.username,
+      perms,
       authUrl: authUrl(s),
     }
   },
@@ -119,8 +139,9 @@ export const auth = {
   admin: {
     async op(pathname: string, body: object) {
       const s = load()
-      if (s.role !== "owner" || !s.adminToken) return { ok: false, error: "not an owner" }
-      return post(pathname, { ...body, admin_token: s.adminToken })
+      const token = s.session?.token
+      if (!token) return { ok: false, error: "not signed in" }
+      return post(pathname, { ...body, session: token })
     },
     list() {
       return auth.admin.op("/admin/list", {})
