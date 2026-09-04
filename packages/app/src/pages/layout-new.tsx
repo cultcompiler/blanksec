@@ -1,5 +1,6 @@
-import { createEffect, createSignal, Show, Suspense, type JSX, type ParentProps } from "solid-js"
+import { createEffect, createSignal, on, Show, Suspense, type JSX, type ParentProps } from "solid-js"
 import { createStore } from "solid-js/store"
+import { useLocation } from "@solidjs/router"
 import ScraperPage from "@/pages/scraper"
 import { DebugBar } from "@/components/debug-bar"
 import { TabsInfoPopup } from "@/components/help-button"
@@ -11,6 +12,9 @@ export default function NewLayout(props: ParentProps) {
   const platform = usePlatform()
   const [state, setState] = createStore({ debugTools: true })
   const [section, setSection] = createSignal<"chat" | "scraper">("chat")
+  const location = useLocation()
+  // Any navigation (opening a chat tab, a new session) drops back to the Chat view.
+  createEffect(on(() => location.pathname, () => setSection("chat"), { defer: true }))
 
   createEffect(() => setV2Toast(true))
 
@@ -45,7 +49,7 @@ export default function NewLayout(props: ParentProps) {
         <main class="relative flex-1 min-h-0 min-w-0 overflow-x-hidden flex flex-col items-start contain-strict">
           <Suspense>{props.children}</Suspense>
           <Show when={section() === "scraper"}>
-            <div class="absolute inset-0 z-20" style={{ background: "var(--v2-background-bg-deep, #0a0a0a)" }}>
+            <div class="absolute inset-0 z-20 bg-v2-background-bg-base">
               <ScraperPage />
             </div>
           </Show>
@@ -60,13 +64,7 @@ export default function NewLayout(props: ParentProps) {
 
 function ActivityRail(props: { section: "chat" | "scraper"; onSelect: (s: "chat" | "scraper") => void }) {
   return (
-    <div
-      class="w-12 shrink-0 flex flex-col items-center gap-1 pt-2"
-      style={{
-        background: "var(--v2-background-bg-base, #141414)",
-        "border-right": "1px solid var(--border-base, #2a2a2a)",
-      }}
-    >
+    <div class="flex w-12 shrink-0 flex-col items-center gap-1 border-r border-v2-border-border-muted bg-v2-background-bg-base pt-2">
       <RailButton active={props.section === "chat"} onClick={() => props.onSelect("chat")} title="Chat">
         <svg
           width="20"
@@ -106,12 +104,10 @@ function RailButton(props: { active: boolean; onClick: () => void; title: string
       onClick={props.onClick}
       title={props.title}
       aria-label={props.title}
-      class="w-9 h-9 flex items-center justify-center rounded-md"
-      style={{
-        color: props.active ? "var(--icon-strong-base, #ededed)" : "var(--icon-base, #8a8a8a)",
-        background: props.active ? "var(--v2-background-bg-inverse, #262626)" : "transparent",
-        cursor: "pointer",
-        border: "none",
+      class="flex size-9 cursor-pointer items-center justify-center rounded-[6px] border-0 bg-transparent transition-colors duration-[120ms]"
+      classList={{
+        "bg-v2-overlay-simple-overlay-hover text-v2-icon-icon-base": props.active,
+        "text-v2-icon-icon-muted hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-icon-icon-base": !props.active,
       }}
     >
       {props.children}
