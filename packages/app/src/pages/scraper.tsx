@@ -36,6 +36,45 @@ type ScraperAPI = {
 }
 const api = (): ScraperAPI | undefined => (window as unknown as { api?: { scraper?: ScraperAPI } }).api?.scraper
 
+function copyText(text: string) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(text)
+      return
+    }
+  } catch {}
+  try {
+    const ta = document.createElement("textarea")
+    ta.value = text
+    ta.style.position = "fixed"
+    ta.style.opacity = "0"
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand("copy")
+    document.body.removeChild(ta)
+  } catch {}
+}
+
+function CopyButton(props: { value: string; label: string }) {
+  const [copied, setCopied] = createSignal(false)
+  return (
+    <IconButtonV2
+      variant="ghost-muted"
+      size="small"
+      class="shrink-0 opacity-0 transition-opacity group-hover/finding:opacity-100 focus-visible:opacity-100"
+      icon={<IconV2 name={copied() ? "status-active" : "outline-copy"} />}
+      aria-label={props.label}
+      title={props.label}
+      onClick={(e: MouseEvent) => {
+        e.stopPropagation()
+        copyText(props.value)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 1100)
+      }}
+    />
+  )
+}
+
 export default function ScraperPage() {
   const [jobs, setJobs] = createSignal<ScraperJob[]>([])
   const [selected, setSelected] = createSignal<number | null>(null)
@@ -298,19 +337,27 @@ export default function ScraperPage() {
                     <div class="flex flex-col gap-px p-2">
                       <For each={findings()}>
                         {(f) => (
-                          <div class="flex flex-col gap-1 rounded-[6px] px-4 py-3 hover:bg-v2-overlay-simple-overlay-hover">
-                            <div class="flex items-baseline gap-2">
+                          <div class="group/finding relative flex flex-col gap-1 rounded-[6px] px-4 py-3 hover:bg-v2-overlay-simple-overlay-hover">
+                            <div class="flex items-start gap-2">
                               <Show when={typeof f.score === "number"}>
-                                <span class="shrink-0 text-[12px] tabular-nums text-v2-text-text-base [font-weight:560]">
+                                <span class="shrink-0 pt-px text-[12px] tabular-nums text-v2-text-text-base [font-weight:560]">
                                   {f.score}
                                 </span>
                               </Show>
-                              <span class="text-[13px] leading-4 tracking-[-0.04px] break-all text-v2-text-text-base [font-weight:530]">
+                              <span class="min-w-0 flex-1 text-[13px] leading-4 tracking-[-0.04px] break-all text-v2-text-text-base [font-weight:530]">
                                 {f.title || f.url || "(untitled)"}
                               </span>
+                              <Show when={f.title || f.url}>
+                                <CopyButton value={String(f.title || f.url || "")} label={f.title ? "Copy title" : "Copy link"} />
+                              </Show>
                             </div>
-                            <Show when={f.url && f.title}>
-                              <span class="text-[12px] break-all text-v2-text-text-muted [font-weight:440]">{f.url}</span>
+                            <Show when={f.title && f.url}>
+                              <div class="flex items-start gap-2">
+                                <span class="min-w-0 flex-1 text-[12px] break-all text-v2-text-text-muted [font-weight:440]">
+                                  {f.url}
+                                </span>
+                                <CopyButton value={String(f.url || "")} label="Copy link" />
+                              </div>
                             </Show>
                             <Show when={f.why || f.extracted || f.snippet}>
                               <span class="text-[12px] leading-4 text-v2-text-text-muted [font-weight:440]">

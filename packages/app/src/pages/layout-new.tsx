@@ -51,6 +51,7 @@ export default function NewLayout(props: ParentProps) {
     >
       <Titlebar
         update={update}
+        hideTabs={() => section() === "scraper"}
         debugTools={
           import.meta.env.DEV
             ? { visible: state.debugTools, toggle: () => setState("debugTools", (value) => !value) }
