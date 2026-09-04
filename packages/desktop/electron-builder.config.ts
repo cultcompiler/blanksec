@@ -20,6 +20,7 @@ const metainfoFpm = (appId: string) =>
 
 async function signWindows(configuration: { path: string }) {
   if (process.platform !== "win32") return
+  if (!process.env.BLANKSEC_SIGN) return
   if (process.env.GITHUB_ACTIONS !== "true") return
 
   await execFileAsync(
@@ -42,7 +43,7 @@ const APP_IDS = {
 } as const
 
 const getBase = (appId: string): Configuration => ({
-  artifactName: "opencode-desktop-${os}-${arch}.${ext}",
+  artifactName: "blanksec-desktop-${os}-${arch}.${ext}",
   directories: {
     output: "dist",
     buildResources: "resources",
@@ -127,7 +128,7 @@ function getConfig() {
       return {
         ...base,
         appId,
-        productName: "OpenCode Dev",
+        productName: "blanksec",
         deb: { fpm: [metainfoFpm(appId)] },
         rpm: { packageName: "opencode-dev", fpm: [metainfoFpm(appId)] },
       }
