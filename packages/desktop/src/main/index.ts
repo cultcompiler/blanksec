@@ -52,8 +52,8 @@ import { setNativeTranslations } from "./native-translations"
 
 const APP_NAMES: Record<string, string> = {
   dev: "Blank",
-  beta: "OpenCode Beta",
-  prod: "OpenCode",
+  beta: "Blank Beta",
+  prod: "Blank",
 }
 const APP_IDS: Record<string, string> = {
   dev: "ai.opencode.desktop.dev",
