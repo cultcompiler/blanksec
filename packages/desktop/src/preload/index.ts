@@ -141,7 +141,20 @@ const api: ElectronAPI = {
     start: (id) => ipcRenderer.invoke("scraper:start", id),
     stop: (id) => ipcRenderer.invoke("scraper:stop", id),
     delete: (id) => ipcRenderer.invoke("scraper:delete", id),
+    rename: (id, name) => ipcRenderer.invoke("scraper:rename", id, name),
     status: () => ipcRenderer.invoke("scraper:status"),
+  },
+  auth: {
+    state: () => ipcRenderer.invoke("auth:state"),
+    login: (u, p) => ipcRenderer.invoke("auth:login", u, p),
+    setupOwner: (t) => ipcRenderer.invoke("auth:setupOwner", t),
+    logout: () => ipcRenderer.invoke("auth:logout"),
+    setAuthUrl: (url) => ipcRenderer.invoke("auth:setAuthUrl", url),
+    adminList: () => ipcRenderer.invoke("auth:adminList"),
+    adminCreate: (u, p, perms) => ipcRenderer.invoke("auth:adminCreate", u, p, perms),
+    adminUpdate: (id, perms, password) => ipcRenderer.invoke("auth:adminUpdate", id, perms, password),
+    adminDelete: (id) => ipcRenderer.invoke("auth:adminDelete", id),
+    adminResetDevice: (id) => ipcRenderer.invoke("auth:adminResetDevice", id),
   },
 }
 

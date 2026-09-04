@@ -65,7 +65,39 @@ export type ScraperAPI = {
   start: (id: number) => Promise<ScraperResult>
   stop: (id: number) => Promise<ScraperResult>
   delete: (id: number) => Promise<ScraperResult>
+  rename: (id: number, name: string) => Promise<ScraperResult>
   status: () => Promise<ScraperResult>
+}
+
+export type Perms = Record<string, boolean>
+export type AuthAccount = { id: number; username: string; perms: Perms; device_bound?: boolean; created?: number }
+export type AuthStateInfo = {
+  role: "owner" | "member" | null
+  isOwner: boolean
+  configured: boolean
+  username: string | null
+  perms: Perms | null
+  authUrl: string
+}
+export type AuthResult = {
+  ok?: boolean
+  error?: string
+  token?: string
+  perms?: Perms
+  accounts?: AuthAccount[]
+  [k: string]: unknown
+}
+export type AuthAPI = {
+  state: () => Promise<AuthStateInfo>
+  login: (username: string, password: string) => Promise<AuthResult>
+  setupOwner: (adminToken: string) => Promise<AuthResult>
+  logout: () => Promise<AuthResult>
+  setAuthUrl: (url: string) => Promise<AuthResult>
+  adminList: () => Promise<AuthResult>
+  adminCreate: (username: string, password: string, perms: Perms) => Promise<AuthResult>
+  adminUpdate: (id: number, perms?: Perms, password?: string) => Promise<AuthResult>
+  adminDelete: (id: number) => Promise<AuthResult>
+  adminResetDevice: (id: number) => Promise<AuthResult>
 }
 
 export type ElectronAPI = {
@@ -140,4 +172,5 @@ export type ElectronAPI = {
   recordFatalRendererError: (error: FatalRendererError) => Promise<void>
   setNativeTranslations: (bundle: DesktopNativeBundle) => Promise<void>
   scraper: ScraperAPI
+  auth: AuthAPI
 }

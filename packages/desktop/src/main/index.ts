@@ -45,6 +45,7 @@ import {
 import { createWslServersController } from "./wsl/servers"
 import { registerWslIpcHandlers } from "./wsl/ipc"
 import { registerScraperIpc } from "./scraper"
+import { registerAuthIpc } from "./auth"
 import { spawnWslSidecar } from "./wsl/sidecar"
 import { migrate } from "./migrate"
 import { cleanupStoreFiles } from "./store-cleanup"
@@ -282,6 +283,7 @@ const main = Effect.gen(function* () {
     relaunch,
   }
   registerScraperIpc()
+  registerAuthIpc()
   registerIpcHandlers({
     killSidecar: () => killSidecar(),
     relaunch,

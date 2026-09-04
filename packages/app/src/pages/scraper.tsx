@@ -32,6 +32,7 @@ type ScraperAPI = {
   start: (id: number) => Promise<ScraperResult>
   stop: (id: number) => Promise<ScraperResult>
   delete: (id: number) => Promise<ScraperResult>
+  rename: (id: number, name: string) => Promise<ScraperResult>
   status: () => Promise<ScraperResult>
 }
 const api = (): ScraperAPI | undefined => (window as unknown as { api?: { scraper?: ScraperAPI } }).api?.scraper
@@ -84,6 +85,8 @@ export default function ScraperPage() {
   const [busy, setBusy] = createSignal(false)
   const [msg, setMsg] = createSignal<string | null>(null)
   const [loadingFindings, setLoadingFindings] = createSignal(false)
+  const [editingId, setEditingId] = createSignal<number | null>(null)
+  const [editVal, setEditVal] = createSignal("")
 
   const available = createMemo(() => !!api())
   const daemonUp = createMemo(() => {
@@ -157,6 +160,26 @@ export default function ScraperPage() {
       await refresh()
     } catch (e: any) {
       setMsg(kind + " failed: " + String(e?.message || e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function startRename(job: ScraperJob) {
+    setEditVal(String(job.descr || job.description || ""))
+    setEditingId(job.id)
+  }
+  async function commitRename(id: number) {
+    const s = api()
+    const name = editVal().trim()
+    setEditingId(null)
+    if (!s || !name) return
+    setBusy(true)
+    try {
+      await s.rename(id, name)
+      await refresh()
+    } catch (e: any) {
+      setMsg("Rename failed: " + String(e?.message || e))
     } finally {
       setBusy(false)
     }
@@ -244,26 +267,46 @@ export default function ScraperPage() {
                   <For each={jobs()}>
                     {(job) => {
                       const running = () => String(job.status || "").toLowerCase() === "active"
+                      const editing = () => editingId() === job.id
                       return (
                         <div
-                          class="group/job relative flex min-h-[52px] items-center rounded-[6px]"
-                          classList={{ "bg-v2-overlay-simple-overlay-hover": selected() === job.id }}
+                          class="group/job relative flex min-h-[52px] items-center rounded-[6px] transition-[background-color] duration-[120ms]"
+                          classList={{
+                            "bg-v2-overlay-simple-overlay-hover": selected() === job.id || editing(),
+                            "hover:bg-v2-overlay-simple-overlay-hover": !editing(),
+                          }}
                         >
-                          <button
-                            type="button"
-                            class={`
-                              flex min-h-[52px] w-full flex-1 flex-col justify-center gap-1 rounded-[6px] border-0
-                              bg-transparent px-3 py-2 pr-3 text-left transition-[background-color] duration-[120ms]
-                              ease-in-out hover:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none
-                            `}
-                            onClick={() => loadFindings(job.id)}
+                          <div
+                            class="flex min-h-[52px] w-full flex-1 cursor-pointer flex-col justify-center gap-1 px-3 py-2 pr-24"
+                            onClick={() => !editing() && loadFindings(job.id)}
                           >
-                            <span class="overflow-hidden text-ellipsis text-[13px] leading-4 tracking-[-0.04px] text-v2-text-text-base [font-weight:530]">
-                              {job.descr || job.description || `Job #${job.id}`}
-                            </span>
+                            <Show
+                              when={editing()}
+                              fallback={
+                                <span class="overflow-hidden text-ellipsis whitespace-nowrap text-[13px] leading-4 tracking-[-0.04px] text-v2-text-text-base [font-weight:530]">
+                                  {job.descr || job.description || `Job #${job.id}`}
+                                </span>
+                              }
+                            >
+                              <input
+                                ref={(el) => queueMicrotask(() => el.focus())}
+                                class="w-full rounded-[4px] border border-v2-border-border-strong bg-v2-background-bg-layer-02 px-1.5 py-0.5 text-[13px] leading-4 text-v2-text-text-base [font-weight:530] outline-0"
+                                value={editVal()}
+                                onClick={(e) => e.stopPropagation()}
+                                onInput={(e) => setEditVal(e.currentTarget.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") commitRename(job.id)
+                                  else if (e.key === "Escape") setEditingId(null)
+                                }}
+                                onBlur={() => commitRename(job.id)}
+                              />
+                            </Show>
                             <div class="flex items-center gap-2 text-[12px] text-v2-text-text-muted [font-weight:440]">
                               <span class="flex items-center gap-1">
-                                <Show when={running()}>
+                                <Show
+                                  when={running()}
+                                  fallback={<span class="size-1.5 rounded-full bg-current opacity-50" />}
+                                >
                                   <IconV2 name="status-active" class="size-2.5" />
                                 </Show>
                                 {running() ? "running" : job.status || "idle"}
@@ -273,33 +316,40 @@ export default function ScraperPage() {
                                 <span>{job.kept} matches</span>
                               </Show>
                             </div>
-                          </button>
-                          <div
-                            class={`
-                              absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 opacity-0
-                              transition-opacity group-hover/job:opacity-100 focus-within:opacity-100
-                            `}
-                          >
-                            <Show
-                              when={running()}
-                              fallback={
-                                <ButtonV2 variant="ghost-muted" size="small" onClick={() => act("start", job.id)}>
-                                  Start
-                                </ButtonV2>
-                              }
-                            >
-                              <ButtonV2 variant="ghost-muted" size="small" onClick={() => act("stop", job.id)}>
-                                Stop
-                              </ButtonV2>
-                            </Show>
-                            <IconButtonV2
-                              variant="ghost-muted"
-                              size="small"
-                              icon={<IconV2 name="xmark-small" />}
-                              aria-label="Delete job"
-                              onClick={() => act("delete", job.id)}
-                            />
                           </div>
+                          <Show when={!editing()}>
+                            <div class="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover/job:opacity-100 focus-within:opacity-100">
+                              <IconButtonV2
+                                variant="ghost-muted"
+                                size="small"
+                                icon={<IconV2 name="edit" />}
+                                aria-label="Rename job"
+                                onClick={(e: MouseEvent) => {
+                                  e.stopPropagation()
+                                  startRename(job)
+                                }}
+                              />
+                              <Show
+                                when={running()}
+                                fallback={
+                                  <ButtonV2 variant="ghost-muted" size="small" onClick={() => act("start", job.id)}>
+                                    Start
+                                  </ButtonV2>
+                                }
+                              >
+                                <ButtonV2 variant="ghost-muted" size="small" onClick={() => act("stop", job.id)}>
+                                  Stop
+                                </ButtonV2>
+                              </Show>
+                              <IconButtonV2
+                                variant="ghost-muted"
+                                size="small"
+                                icon={<IconV2 name="xmark-small" />}
+                                aria-label="Delete job"
+                                onClick={() => act("delete", job.id)}
+                              />
+                            </div>
+                          </Show>
                         </div>
                       )
                     }}

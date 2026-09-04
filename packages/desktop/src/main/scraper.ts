@@ -78,6 +78,7 @@ export const scraper = {
   startJob: (id: number) => cli(`start ${Number(id)}`),
   stopJob: (id: number) => cli(`stop ${Number(id)}`),
   deleteJob: (id: number) => cli(`delete ${Number(id)}`),
+  rename: (id: number, name: string) => cli(`rename ${Number(id)} ${shq(name)}`),
   status: async () => {
     try {
       return await cli("status")
@@ -95,5 +96,6 @@ export function registerScraperIpc() {
   ipcMain.handle("scraper:start", (_e, id: number) => scraper.startJob(id))
   ipcMain.handle("scraper:stop", (_e, id: number) => scraper.stopJob(id))
   ipcMain.handle("scraper:delete", (_e, id: number) => scraper.deleteJob(id))
+  ipcMain.handle("scraper:rename", (_e, id: number, name: string) => scraper.rename(id, name))
   ipcMain.handle("scraper:status", () => scraper.status())
 }
