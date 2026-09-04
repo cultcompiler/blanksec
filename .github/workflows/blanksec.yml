@@ -69,13 +69,16 @@ jobs:
       - name: Build desktop (prebuild + electron-vite)
         shell: bash
         run: |
-          bun --cwd packages/desktop run prebuild
-          bun --cwd packages/desktop run build
+          cd packages/desktop
+          bun run prebuild
+          bun run build
         env:
           OPENCODE_CHANNEL: dev
       - name: Package desktop (win, unsigned)
         shell: bash
-        run: bun --cwd packages/desktop run package:win
+        run: |
+          cd packages/desktop
+          bun run package:win
         env:
           OPENCODE_CHANNEL: dev
       - name: Show dist
