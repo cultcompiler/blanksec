@@ -6,8 +6,24 @@ import { ScrollView } from "@opencode-ai/ui/scroll-view"
 
 // The scraper bridge is exposed by the desktop preload as window.api.scraper.
 // It drives the 24/7 dark-web scraper daemon on the Kali box over SSH.
-type ScraperJob = { id: number; description?: string; status?: string; matches?: number; [k: string]: unknown }
-type ScraperFinding = { url?: string; score?: number; title?: string; snippet?: string; [k: string]: unknown }
+type ScraperJob = {
+  id: number
+  descr?: string
+  description?: string
+  status?: string
+  kept?: number
+  matches?: number
+  [k: string]: unknown
+}
+type ScraperFinding = {
+  url?: string
+  score?: number
+  title?: string
+  why?: string
+  extracted?: string
+  snippet?: string
+  [k: string]: unknown
+}
 type ScraperResult = { ok?: boolean; error?: string; [k: string]: unknown }
 type ScraperAPI = {
   addJob: (descr: string, plan?: unknown) => Promise<ScraperResult>
@@ -188,7 +204,7 @@ export default function ScraperPage() {
                 <div class="flex flex-col gap-px p-2">
                   <For each={jobs()}>
                     {(job) => {
-                      const running = () => /run/i.test(String(job.status || ""))
+                      const running = () => String(job.status || "").toLowerCase() === "active"
                       return (
                         <div
                           class="group/job relative flex min-h-[52px] items-center rounded-[6px]"
@@ -204,7 +220,7 @@ export default function ScraperPage() {
                             onClick={() => loadFindings(job.id)}
                           >
                             <span class="overflow-hidden text-ellipsis text-[13px] leading-4 tracking-[-0.04px] text-v2-text-text-base [font-weight:530]">
-                              {job.description || `Job #${job.id}`}
+                              {job.descr || job.description || `Job #${job.id}`}
                             </span>
                             <div class="flex items-center gap-2 text-[12px] text-v2-text-text-muted [font-weight:440]">
                               <span class="flex items-center gap-1">
@@ -213,9 +229,9 @@ export default function ScraperPage() {
                                 </Show>
                                 {running() ? "running" : job.status || "idle"}
                               </span>
-                              <Show when={typeof job.matches === "number"}>
+                              <Show when={typeof job.kept === "number"}>
                                 <span class="text-v2-text-text-faint">·</span>
-                                <span>{job.matches} matches</span>
+                                <span>{job.kept} matches</span>
                               </Show>
                             </div>
                           </button>
@@ -296,8 +312,10 @@ export default function ScraperPage() {
                             <Show when={f.url && f.title}>
                               <span class="text-[12px] break-all text-v2-text-text-muted [font-weight:440]">{f.url}</span>
                             </Show>
-                            <Show when={f.snippet}>
-                              <span class="text-[12px] leading-4 text-v2-text-text-muted [font-weight:440]">{f.snippet}</span>
+                            <Show when={f.why || f.extracted || f.snippet}>
+                              <span class="text-[12px] leading-4 text-v2-text-text-muted [font-weight:440]">
+                                {f.why || f.extracted || f.snippet}
+                              </span>
                             </Show>
                           </div>
                         )}

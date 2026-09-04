@@ -1,4 +1,4 @@
-import { createEffect, createSignal, on, Show, Suspense, type JSX, type ParentProps } from "solid-js"
+import { createEffect, createSignal, on, onCleanup, onMount, Show, Suspense, type JSX, type ParentProps } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLocation } from "@solidjs/router"
 import ScraperPage from "@/pages/scraper"
@@ -15,6 +15,19 @@ export default function NewLayout(props: ParentProps) {
   const location = useLocation()
   // Any navigation (opening a chat tab, a new session) drops back to the Chat view.
   createEffect(on(() => location.pathname, () => setSection("chat"), { defer: true }))
+
+  // Clicking anywhere outside the Scraper panel + rail (e.g. a chat tab in the titlebar) drops back to Chat.
+  let overlayRef: HTMLDivElement | undefined
+  onMount(() => {
+    const onDown = (e: PointerEvent) => {
+      if (section() !== "scraper") return
+      const t = e.target as HTMLElement | null
+      if (!t || (overlayRef && overlayRef.contains(t)) || t.closest("[data-activity-rail]")) return
+      setSection("chat")
+    }
+    document.addEventListener("pointerdown", onDown, true)
+    onCleanup(() => document.removeEventListener("pointerdown", onDown, true))
+  })
 
   createEffect(() => setV2Toast(true))
 
@@ -49,7 +62,7 @@ export default function NewLayout(props: ParentProps) {
         <main class="relative flex-1 min-h-0 min-w-0 overflow-x-hidden flex flex-col items-start contain-strict">
           <Suspense>{props.children}</Suspense>
           <Show when={section() === "scraper"}>
-            <div class="absolute inset-0 z-20 bg-v2-background-bg-base">
+            <div ref={overlayRef} class="absolute inset-0 z-20 bg-v2-background-bg-base">
               <ScraperPage />
             </div>
           </Show>
@@ -64,7 +77,10 @@ export default function NewLayout(props: ParentProps) {
 
 function ActivityRail(props: { section: "chat" | "scraper"; onSelect: (s: "chat" | "scraper") => void }) {
   return (
-    <div class="flex w-12 shrink-0 flex-col items-center gap-1 border-r border-v2-border-border-muted bg-v2-background-bg-base pt-2">
+    <div
+      data-activity-rail
+      class="flex w-12 shrink-0 flex-col items-center gap-1 border-r border-v2-border-border-muted bg-v2-background-bg-base pt-2"
+    >
       <RailButton active={props.section === "chat"} onClick={() => props.onSelect("chat")} title="Chat">
         <svg
           width="20"
