@@ -22,22 +22,67 @@ jobs:
           set +e
           for i in 1 2 3; do
             bun install --linker hoisted && exit 0
-            echo "::warning::install attempt $i failed (likely a Windows FS race); cleaning + retrying..."
+            echo "::warning::install attempt $i failed (Windows FS race); cleaning + retrying..."
             rm -rf node_modules
             sleep 8
           done
           exit 1
-      - name: Build blanksec CLI (windows, single target)
-        run: bun ./packages/opencode/script/build.ts --single
+      - name: Build Blank CLI (windows, single target)
         shell: bash
+        run: bun ./packages/opencode/script/build.ts --single
         env:
           OPENCODE_CHANNEL: dev
-          OPENCODE_VERSION: 0.0.0-blanksec
+          OPENCODE_VERSION: 0.0.0-blank
       - name: Show dist
-        run: ls -la packages/opencode/dist/
         shell: bash
+        run: ls -la packages/opencode/dist/
       - uses: actions/upload-artifact@v4
         with:
-          name: blanksec-cli-windows
+          name: blank-cli-windows
           path: packages/opencode/dist/opencode-windows*
           if-no-files-found: error
+
+  desktop-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set +e
+          for i in 1 2 3; do
+            bun install --linker hoisted && exit 0
+            echo "::warning::install attempt $i failed (Windows FS race); cleaning + retrying..."
+            rm -rf node_modules
+            sleep 8
+          done
+          exit 1
+      - name: Prepare
+        shell: bash
+        run: bun ./scripts/prepare.ts || true
+      - name: Build desktop (prebuild + electron-vite)
+        shell: bash
+        run: |
+          bun --cwd packages/desktop run prebuild
+          bun --cwd packages/desktop run build
+        env:
+          OPENCODE_CHANNEL: dev
+      - name: Package desktop (win, unsigned)
+        shell: bash
+        run: bun --cwd packages/desktop run package:win
+        env:
+          OPENCODE_CHANNEL: dev
+      - name: Show dist
+        shell: bash
+        run: ls -la packages/desktop/dist/ || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: blank-desktop-windows
+          path: packages/desktop/dist/*.exe
+          if-no-files-found: warn

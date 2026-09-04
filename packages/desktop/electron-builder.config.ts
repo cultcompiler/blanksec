@@ -43,7 +43,7 @@ const APP_IDS = {
 } as const
 
 const getBase = (appId: string): Configuration => ({
-  artifactName: "blanksec-desktop-${os}-${arch}.${ext}",
+  artifactName: "blank-desktop-${os}-${arch}.${ext}",
   directories: {
     output: "dist",
     buildResources: "resources",
@@ -87,7 +87,7 @@ const getBase = (appId: string): Configuration => ({
     sign: true,
   },
   protocols: {
-    name: "OpenCode",
+    name: "Blank",
     schemes: ["opencode"],
   },
   win: {
@@ -128,7 +128,7 @@ function getConfig() {
       return {
         ...base,
         appId,
-        productName: "blanksec",
+        productName: "Blank",
         deb: { fpm: [metainfoFpm(appId)] },
         rpm: { packageName: "opencode-dev", fpm: [metainfoFpm(appId)] },
       }

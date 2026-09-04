@@ -194,7 +194,7 @@ function build(input: SplashWriterInput, kind: "entry" | "exit", ctx: Scrollback
       })
     }
 
-    push(lines, body_left, top, "blanksec", right, undefined, TextAttributes.BOLD)
+    push(lines, body_left, top, "Blank", right, undefined, TextAttributes.BOLD)
     if (input.detail) {
       push(
         lines,
