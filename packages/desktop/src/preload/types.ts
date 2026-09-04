@@ -42,6 +42,32 @@ export type FatalRendererError = {
   os?: string
 }
 
+export type ScraperJob = {
+  id: number
+  description?: string
+  status?: string
+  matches?: number
+  [key: string]: unknown
+}
+export type ScraperFinding = {
+  url?: string
+  score?: number
+  title?: string
+  snippet?: string
+  [key: string]: unknown
+}
+export type ScraperResult = { ok?: boolean; error?: string; [key: string]: unknown }
+export type ScraperAPI = {
+  plan: (descr: string) => Promise<ScraperResult>
+  addJob: (descr: string, planObj?: unknown) => Promise<ScraperResult>
+  listJobs: () => Promise<ScraperJob[]>
+  results: (id: number, limit?: number) => Promise<ScraperFinding[]>
+  start: (id: number) => Promise<ScraperResult>
+  stop: (id: number) => Promise<ScraperResult>
+  delete: (id: number) => Promise<ScraperResult>
+  status: () => Promise<ScraperResult>
+}
+
 export type ElectronAPI = {
   killSidecar: () => Promise<void>
   installCli: () => Promise<string>
@@ -113,4 +139,5 @@ export type ElectronAPI = {
   setForceFocus: (enabled: boolean) => Promise<void>
   recordFatalRendererError: (error: FatalRendererError) => Promise<void>
   setNativeTranslations: (bundle: DesktopNativeBundle) => Promise<void>
+  scraper: ScraperAPI
 }

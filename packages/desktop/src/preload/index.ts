@@ -133,6 +133,16 @@ const api: ElectronAPI = {
   setForceFocus: (enabled) => ipcRenderer.invoke("set-force-focus", enabled),
   recordFatalRendererError: (error) => ipcRenderer.invoke("record-fatal-renderer-error", error),
   setNativeTranslations: (bundle) => ipcRenderer.invoke("set-native-translations", bundle),
+  scraper: {
+    plan: (descr) => ipcRenderer.invoke("scraper:plan", descr),
+    addJob: (descr, planObj) => ipcRenderer.invoke("scraper:addJob", descr, planObj),
+    listJobs: () => ipcRenderer.invoke("scraper:listJobs"),
+    results: (id, limit) => ipcRenderer.invoke("scraper:results", id, limit),
+    start: (id) => ipcRenderer.invoke("scraper:start", id),
+    stop: (id) => ipcRenderer.invoke("scraper:stop", id),
+    delete: (id) => ipcRenderer.invoke("scraper:delete", id),
+    status: () => ipcRenderer.invoke("scraper:status"),
+  },
 }
 
 contextBridge.exposeInMainWorld("api", api)

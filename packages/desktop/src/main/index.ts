@@ -44,6 +44,7 @@ import {
 } from "./windows"
 import { createWslServersController } from "./wsl/servers"
 import { registerWslIpcHandlers } from "./wsl/ipc"
+import { registerScraperIpc } from "./scraper"
 import { spawnWslSidecar } from "./wsl/sidecar"
 import { migrate } from "./migrate"
 import { cleanupStoreFiles } from "./store-cleanup"
@@ -280,6 +281,7 @@ const main = Effect.gen(function* () {
     checkForUpdates: () => void showUpdaterDialog(updater, true),
     relaunch,
   }
+  registerScraperIpc()
   registerIpcHandlers({
     killSidecar: () => killSidecar(),
     relaunch,
