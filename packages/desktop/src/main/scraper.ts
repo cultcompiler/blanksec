@@ -7,21 +7,35 @@
 //
 // Config is env-overridable but defaults to the same Kali box the rest of the operator's tooling uses.
 import { execFile } from "node:child_process"
+import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { ipcMain } from "electron"
+import { app, ipcMain } from "electron"
 
-const KALI = {
-  host: process.env.KALI_HOST || "2.25.136.192",
-  user: process.env.KALI_USER || "root",
-  port: Number(process.env.KALI_PORT || 22),
-  key: process.env.KALI_KEY || path.join(os.homedir(), ".ssh", "vast_rig"),
+// The Kali connection is NOT baked into the build (opsec — a friend install must never learn the box's
+// location). It is read from the owner's userData/blank-kali.json (or KALI_* env). Absent = no Kali here,
+// so the scraper simply reports unreachable on non-owner installs.
+function kaliConfig(): { host: string; user: string; port: number; key: string } | null {
+  let c: { host?: string; user?: string; port?: number; key?: string } | null = null
+  try {
+    c = JSON.parse(fs.readFileSync(path.join(app.getPath("userData"), "blank-kali.json"), "utf8"))
+  } catch {}
+  if (!c?.host && process.env.KALI_HOST) c = { host: process.env.KALI_HOST }
+  if (!c?.host) return null
+  return {
+    host: String(c.host),
+    user: String(c.user || process.env.KALI_USER || "root"),
+    port: Number(c.port || process.env.KALI_PORT || 22),
+    key: String(c.key || process.env.KALI_KEY || path.join(os.homedir(), ".ssh", "vast_rig")),
+  }
 }
 const SCRAPER = "python3 /opt/kultsec-scraper/scraper.py"
 const shq = (s: unknown) => "'" + String(s ?? "").replace(/'/g, "'\\''") + "'"
 
 function kaliExec(remoteCmd: string, timeout = 250_000): Promise<{ out: string; err: string }> {
   return new Promise((resolve, reject) => {
+    const KALI = kaliConfig()
+    if (!KALI) return reject(new Error("Kali is not configured on this device"))
     const args = [
       "-i",
       KALI.key,
